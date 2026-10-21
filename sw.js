@@ -1,8 +1,10 @@
 // Deixa o app abrir sem internet. Ao publicar uma nova versão, mude VERSAO.
-const VERSAO = 'contas-v1';
+const VERSAO = 'contas-v2';
 const ARQUIVOS = [
   './',
   'index.html',
+  'nuvem.js',
+  'firebase-config.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',
@@ -37,8 +39,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Fontes do Google: usa a guardada e renova em segundo plano.
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+  // Fontes do Google e biblioteca do Firebase: usa a guardada e renova em segundo plano.
+  // (Login e dados do Firebase passam direto pela rede; o próprio Firebase guarda a cópia offline.)
+  const ehSdkFirebase = url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/');
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || ehSdkFirebase) {
     e.respondWith(
       caches.open(VERSAO + '-fontes').then(c => c.match(req).then(guardada => {
         const rede = fetch(req).then(r => { c.put(req, r.clone()); return r; }).catch(() => guardada);
@@ -49,6 +53,15 @@ self.addEventListener('fetch', e => {
   }
 
   if (url.origin === location.origin) {
+    // Scripts do app: rede primeiro (para receber correções e a configuração do Firebase), cópia sem internet.
+    if (url.pathname.endsWith('.js')) {
+      e.respondWith(
+        fetch(req)
+          .then(r => { const copia = r.clone(); caches.open(VERSAO).then(c => c.put(req, copia)); return r; })
+          .catch(() => caches.match(req))
+      );
+      return;
+    }
     e.respondWith(caches.match(req).then(r => r || fetch(req)));
   }
 });
