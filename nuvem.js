@@ -24,6 +24,7 @@ const MENSAGENS = {
   'auth/cancelled-popup-request': 'A janela do Google foi fechada antes de terminar.',
   'auth/unauthorized-domain': 'Este endereço não está autorizado no Firebase. Adicione-o em Authentication → Configurações → Domínios autorizados.',
   'auth/operation-not-allowed': 'Este tipo de login não está ativado no Firebase.',
+  'auth/configuration-not-found': 'O login ainda não foi ativado no Firebase (Authentication → Método de login).',
 };
 const traduzir = e => MENSAGENS[e && e.code] || 'Não foi possível concluir. Tente de novo.';
 
