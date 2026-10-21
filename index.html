@@ -508,8 +508,12 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       ocupado($('l-enviar'), true);
       msg(modoLogin === 'criar' ? 'Criando sua conta…' : 'Entrando…', true);
       try {
-        if (modoLogin === 'criar') await Nuvem.criarConta(email, senha, $('l-nome').value.trim());
-        else await Nuvem.entrar(email, senha);
+        if (modoLogin === 'criar') {
+          const nome = $('l-nome').value.trim();
+          await Nuvem.criarConta(email, senha, nome);
+          // O nome é gravado logo depois de a conta existir; atualiza o cabeçalho com ele.
+          if (nome && usuario) { usuario = { ...usuario, nome }; atualizarRotuloConta(); }
+        } else await Nuvem.entrar(email, senha);
         $('l-senha').value = '';
       } catch (err) { msg(err.message); }
       ocupado($('l-enviar'), false);
