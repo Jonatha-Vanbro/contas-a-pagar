@@ -475,6 +475,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
   function abrirLogin() {
     if (!window.Nuvem || !Nuvem.configurado) return;
     fecharFolha();
+    const aviso = document.querySelector('.toast'); if (aviso) aviso.remove();
     $('tela-login').hidden = false;
     document.body.style.overflow = 'hidden';
     trocarModoLogin('entrar');
