@@ -351,7 +351,9 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
   const LS_KEY = 'contas-a-pagar-v1';
   const LS_SEM_CONTA = 'contas-a-pagar-sem-conta';
   const LS_SESSAO = 'contas-a-pagar-sessao';
-  const CONFIG_PADRAO = { renda: 0, encerradas: [], ultimoBackup: null };
+  const LS_AVISO = 'contas-a-pagar-aviso';   // "<uid>:<id do aparelho>" quando os avisos estão ativos neste celular
+  // notif: quantos dias antes do vencimento avisar (0 = no dia) e se lembra das vencidas. Lido pelo robô em avisos/.
+  const CONFIG_PADRAO = { renda: 0, encerradas: [], ultimoBackup: null, notif: { dias: [3, 1, 0], vencidas: true } };
   const state = { config: { ...CONFIG_PADRAO }, meses: {} };
   let armazenamentoOk = true;
   let modo = 'local';          // 'local' ou 'conta'
@@ -974,6 +976,81 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
     });
   }
 
+  // ---------- Avisos de vencimento (notificações) ----------
+  const OPCOES_AVISO = [{ v: 3, t: '3 dias antes' }, { v: 1, t: '1 dia antes' }, { v: 0, t: 'No dia' }];
+  const idAvisoLocal = () => {
+    const s = lsGet(LS_AVISO) || '';
+    return usuario && s.startsWith(usuario.uid + ':') ? s.slice(usuario.uid.length + 1) : null;
+  };
+  const avisosAtivosAqui = () => !!idAvisoLocal() && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const ehIphoneNoNavegador = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.standalone || matchMedia('(display-mode: standalone)').matches);
+
+  function htmlAvisos() {
+    if (!window.Nuvem || !Nuvem.configurado) return '';
+    let estado;
+    if (modo !== 'conta') estado = `<div class="status"><i></i><span>Entre na sua conta para receber avisos de vencimento no celular.</span></div>`;
+    else if (!Nuvem.avisosConfigurados) estado = `<div class="status"><i></i><span>Os avisos ainda não foram configurados neste app.</span></div>`;
+    else if (!Nuvem.pushSuportado) estado = `<div class="status"><i></i><span>${ehIphoneNoNavegador()
+      ? 'No iPhone, os avisos só funcionam no app da Tela de Início: no Safari, toque em Compartilhar → Adicionar à Tela de Início e abra o app por lá.'
+      : 'Este navegador não aceita notificações. No Android, use o Chrome.'}</span></div>`;
+    else if (Notification.permission === 'denied') estado = `<div class="status"><i></i><span>As notificações deste site estão bloqueadas. Libere nas configurações do navegador (toque no cadeado ao lado do endereço → Notificações) e volte aqui.</span></div>`;
+    else if (avisosAtivosAqui()) estado = `<div class="status on"><i></i><span>Avisos ativados neste celular. Eles chegam uma vez por dia, por volta das 8h.</span></div>
+      <button class="btn ghost" id="a-av-off">Desativar avisos neste celular</button>`;
+    else estado = `<p class="note" style="margin:0">Receba uma notificação quando uma conta estiver perto de vencer, mesmo com o app fechado.</p>
+      <button class="btn" id="a-av-on">Ativar avisos neste celular</button>`;
+    const n = state.config.notif || CONFIG_PADRAO.notif;
+    const prefs = modo === 'conta' ? `
+      <div class="field"><span class="lbl" id="lbl-av">Quando avisar</span>
+        <div class="chips" role="group" aria-labelledby="lbl-av" id="a-av-prefs">
+          ${OPCOES_AVISO.map(o => `<button type="button" class="chip" role="checkbox" data-dia="${o.v}" aria-checked="${(n.dias || []).includes(o.v)}">${o.t}</button>`).join('')}
+          <button type="button" class="chip" role="checkbox" data-venc="1" aria-checked="${n.vencidas !== false}">Contas vencidas</button>
+        </div>
+        <span class="note">Vale para todos os aparelhos em que você ativar os avisos.</span>
+      </div>` : '';
+    return `<h2>Avisos de vencimento</h2>${estado}<div class="err" id="a-av-msg" role="alert"></div>${prefs}<hr class="dash" style="margin:2px 0">`;
+  }
+
+  function ligarAvisos() {
+    const msg = t => { const m = $('a-av-msg'); if (m) m.textContent = t; };
+    const on = $('a-av-on');
+    if (on) on.addEventListener('click', async () => {
+      on.disabled = true; on.textContent = 'Ativando…'; msg('');
+      try {
+        const id = await Nuvem.ativarAvisos(usuario.uid);
+        lsSet(LS_AVISO, usuario.uid + ':' + id);
+        // Grava as preferências na conta para o robô saber quando avisar.
+        state.config = { ...state.config, notif: state.config.notif || CONFIG_PADRAO.notif };
+        gravar('config');
+        fecharFolha(); abrirAjustes();
+        toast('Avisos ativados neste celular');
+      } catch (e) {
+        on.disabled = false; on.textContent = 'Ativar avisos neste celular';
+        msg(e.message);
+      }
+    });
+    const off = $('a-av-off');
+    if (off) off.addEventListener('click', async () => {
+      off.disabled = true;
+      try { await Nuvem.desativarAvisos(usuario.uid, idAvisoLocal()); } catch (e) {}
+      lsSet(LS_AVISO, null);
+      fecharFolha(); abrirAjustes();
+      toast('Avisos desativados neste celular');
+    });
+    const prefs = $('a-av-prefs');
+    if (prefs) prefs.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      const n = { ...CONFIG_PADRAO.notif, ...(state.config.notif || {}) };
+      if (b.dataset.venc) n.vencidas = b.getAttribute('aria-checked') !== 'true';
+      else {
+        const v = Number(b.dataset.dia);
+        n.dias = n.dias.includes(v) ? n.dias.filter(d => d !== v) : n.dias.concat(v).sort((a, c) => c - a);
+      }
+      b.setAttribute('aria-checked', b.dataset.venc ? n.vencidas : n.dias.includes(Number(b.dataset.dia)));
+      state.config = { ...state.config, notif: n };
+      gravar('config');
+    });
+  }
+
   function abrirAjustes() {
     const ub = state.config.ultimoBackup;
     const diasBackup = ub ? diaNum(isoHoje()) - diaNum(ub) : null;
@@ -988,6 +1065,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         <div class="status"><i></i><span>Você está usando sem conta: as contas ficam só neste celular.</span></div>
         <button class="btn" id="a-entrar">Entrar ou criar conta</button>
         <hr class="dash" style="margin:2px 0">` : ''}
+      ${htmlAvisos()}
       <div class="field"><label for="a-renda">Renda mensal</label>
         <div class="amount-wrap"><span>R$</span><input class="amount" id="a-renda" inputmode="numeric" autocomplete="off" style="font-size:26px" value="${((state.config.renda || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}"></div>
         <span class="note">Opcional. Mostra quanto sobra depois das contas de cada mês. Use 0,00 para não mostrar.</span>
@@ -1011,8 +1089,11 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       if (sair) sair.addEventListener('click', async () => {
         if (!sair.classList.contains('armed')) { sair.classList.add('armed', 'danger'); sair.textContent = 'Toque para confirmar a saída'; return; }
         fecharFolha();
+        // Quem entrar depois neste celular não deve receber os avisos desta conta.
+        if (idAvisoLocal()) { try { await Nuvem.desativarAvisos(usuario.uid, idAvisoLocal()); } catch (e) {} lsSet(LS_AVISO, null); }
         await Nuvem.sair();
       });
+      ligarAvisos();
       const entrar = $('a-entrar');
       if (entrar) entrar.addEventListener('click', () => { lsSet(LS_SEM_CONTA, null); abrirLogin(); });
       $('a-backup').addEventListener('click', async () => { await fazerBackup(); fecharFolha(); render(); });
@@ -1109,7 +1190,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
   if (window.Nuvem) aoNuvemPronta(); else window.addEventListener('nuvem-pronta', aoNuvemPronta, { once: true });
   // Atualiza os avisos de vencimento quando o app volta para a tela no dia seguinte.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { estenderFixas(); render(); } });
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 })();

@@ -1,5 +1,5 @@
 // Deixa o app abrir sem internet. Ao publicar uma nova versão, mude VERSAO.
-const VERSAO = 'contas-v3';
+const VERSAO = 'contas-v4';
 const ARQUIVOS = [
   './',
   'index.html',
@@ -64,4 +64,34 @@ self.addEventListener('fetch', e => {
     }
     e.respondWith(caches.match(req).then(r => r || fetch(req)));
   }
+});
+
+// Avisos de vencimento enviados pelo robô diário (avisos/avisos.mjs) pelo Firebase Cloud Messaging.
+// O robô manda só "data"; a notificação é montada aqui para funcionar igual no Android e no iPhone.
+self.addEventListener('push', e => {
+  let p = {};
+  try { p = e.data ? e.data.json() : {}; } catch (err) { p = { data: { corpo: e.data ? e.data.text() : '' } }; }
+  const d = p.data || {};
+  const n = p.notification || {};
+  const titulo = d.titulo || n.title || 'Contas a Pagar';
+  e.waitUntil(self.registration.showNotification(titulo, {
+    body: d.corpo || n.body || 'Você tem contas perto do vencimento.',
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: d.tag || 'vencimentos',
+    renotify: true,
+    data: { url: d.url || './' },
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const destino = new URL(e.notification.data && e.notification.data.url || './', self.registration.scope).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(janelas => {
+      const aberta = janelas.find(j => j.url.startsWith(self.registration.scope));
+      if (aberta) return aberta.focus();
+      return self.clients.openWindow(destino);
+    })
+  );
 });

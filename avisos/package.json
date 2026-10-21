@@ -1,0 +1,9 @@
+{
+  "name": "contas-a-pagar-avisos",
+  "private": true,
+  "type": "module",
+  "description": "Robô diário que envia os avisos de vencimento",
+  "dependencies": {
+    "firebase-admin": "12.7.0"
+  }
+}

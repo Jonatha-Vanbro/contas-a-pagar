@@ -36,10 +36,23 @@ Na primeira vez o app pede para **entrar** ou **criar conta** (e-mail e senha, o
 
 Se você já usava o app sem conta, ao entrar ele oferece enviar essas contas para a sua conta.
 
+## Avisos de vencimento (notificações)
+
+Um robô no GitHub Actions ([`.github/workflows/avisos.yml`](.github/workflows/avisos.yml)) roda todo dia às 8h de Brasília. Ele lê as contas em aberto de quem ativou os avisos e manda uma notificação pelo Firebase Cloud Messaging: 3 dias antes, 1 dia antes, no dia e enquanto a conta estiver vencida (cada pessoa escolhe em **Ajustes → Avisos de vencimento**). As regras ficam em [`avisos/regras.mjs`](avisos/regras.mjs).
+
+Configuração (uma vez):
+
+1. **Chave pública de notificações:** no console do Firebase, **Configurações do projeto → Cloud Messaging → Configuração da Web → Certificados push da Web → Gerar par de chaves**. Copie a chave para `vapidKey` em [`firebase-config.js`](firebase-config.js).
+2. **Chave da conta de serviço** (deixa o robô ler as contas): **Configurações do projeto → Contas de serviço → Gerar nova chave privada**. Abra o arquivo `.json` baixado, copie todo o conteúdo e, no GitHub, vá em **Settings → Secrets and variables → Actions → New repository secret**, com o nome `FIREBASE_SERVICE_ACCOUNT`. Não envie essa chave para ninguém nem a coloque nos arquivos do repositório; depois de salvar no GitHub, apague o arquivo baixado.
+3. No celular, abra o app instalado, entre na conta e toque em **Ajustes → Ativar avisos neste celular**.
+4. Para testar na hora: no GitHub, **Actions → Avisos de vencimento → Run workflow**, marque *Mandar um aviso de teste* e confirme.
+
+No iPhone os avisos só funcionam no app adicionado à Tela de Início, com iOS 16.4 ou mais recente.
+
 ## Backup
 
 Em **Ajustes → Fazer backup** o app gera um arquivo `backup-contas-AAAA-MM-DD.json` com tudo. Com a conta ele é opcional; sem conta é a única proteção se o celular for trocado ou o navegador limpo. Para recuperar: **Ajustes → Restaurar de um backup**.
 
 ## Atualizar o app
 
-Depois de alterar os arquivos, mude `VERSAO` em `sw.js` (por exemplo `contas-v3`) para os celulares receberem a nova versão.
+Depois de alterar os arquivos, mude `VERSAO` em `sw.js` (por exemplo `contas-v5`) para os celulares receberem a nova versão.

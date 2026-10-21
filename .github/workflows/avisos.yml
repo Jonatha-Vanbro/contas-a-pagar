@@ -1,0 +1,39 @@
+name: Avisos de vencimento
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # todo dia às 8h de Brasília (11h UTC); o GitHub pode atrasar alguns minutos
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: 'Mandar um aviso de teste para todos os celulares com avisos ativos'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar dependências
+        working-directory: avisos
+        run: npm install --no-audit --no-fund
+      - name: Enviar avisos
+        working-directory: avisos
+        run: node avisos.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TESTE: ${{ inputs.teste }}
+      # O GitHub desliga agendamentos de repositórios sem atividade por 60 dias; reativar a cada execução evita isso.
+      - name: Manter o agendamento ligado
+        if: github.event_name == 'schedule'
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/avisos.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
