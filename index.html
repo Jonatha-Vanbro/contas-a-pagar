@@ -22,6 +22,7 @@
     if (a.tema === 'claro') r.dataset.theme = 'light';
     if (a.tema === 'escuro') r.dataset.theme = 'dark';
     if (a.layout) r.dataset.layout = a.layout;
+    if (a.texto && a.texto !== 'normal') r.dataset.texto = a.texto;
   } catch (e) {}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,7 +144,27 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
 .abrir { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; border: 0; background: none; text-align: left; padding: 11px 12px 11px 8px; grid-column: 2 / 4; min-width: 0; }
 .abrir:active { background: var(--surface-2); }
 .item .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; min-width: 0; }
-.item .t .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.abrir { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; }
+.abrir > .selo { grid-row: 1 / 3; width: 32px; height: 32px; border-radius: 10px; }
+[data-texto] .stats b { white-space: normal; }
+.selo { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex: none; color: var(--cc); background: color-mix(in srgb, var(--cc) 16%, transparent); }
+.chip .selo { width: 22px; height: 22px; border-radius: 6px; margin-left: -4px; }
+.chip-nova { border-style: dashed; color: var(--accent); }
+.editor-cat { display: grid; gap: 12px; margin-top: 10px; padding: 14px; border-radius: 14px; background: var(--surface-2); }
+.editor-cat .input { background: var(--surface); }
+.icones { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
+.ico-btn { height: 40px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); display: grid; place-items: center; padding: 0; }
+.ico-btn[aria-checked="true"] { border-color: var(--fg); background: var(--accent-soft); color: var(--accent); }
+.cor-btn.cor-btn-p { width: 34px; height: 34px; }
+.toggle small { display: block; font-weight: 500; margin-top: 2px; }
+.toggle input { flex: none; align-self: flex-start; margin-top: 1px; }
+.cat-lista { display: grid; gap: 6px; }
+.cat-linha { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); font-weight: 600; }
+.cat-linha span.n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-linha button { border: 0; background: none; color: var(--bad); font-weight: 600; font-size: 13px; padding: 6px 4px; }
+.item.paga .selo { opacity: .6; }
+.aprox { color: var(--warn); margin-right: 2px; }
+.a-confirmar { color: var(--warn); font-weight: 600; }
 .item .t em { font-style: normal; overflow: hidden; text-overflow: ellipsis; }
 .item .v { font-family: var(--f-num); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
 .item.paga .v, .item.paga .t em { color: var(--muted); }
@@ -263,6 +284,10 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
 [data-layout="compacto"] .month-nav { margin-top: 6px; }
 [data-layout="compacto"] .top { padding-block: 8px 10px; }
 
+/* Tamanho do texto: aumenta a página inteira por igual (letras, botões e espaços). */
+:root[data-texto="grande"] { zoom: 1.12; }
+:root[data-texto="maior"] { zoom: 1.25; }
+
 /* Seletores da seção Aparência */
 .cores { display: flex; flex-wrap: wrap; gap: 10px; }
 .cor-btn { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1.5px var(--line); padding: 0; }
@@ -358,22 +383,52 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
 
 <script>
 (() => {
-  const CATS = [
-    { id: 'moradia', nome: 'Moradia' },
-    { id: 'energia', nome: 'Energia' },
-    { id: 'agua', nome: 'Água' },
-    { id: 'internet', nome: 'Internet e celular' },
-    { id: 'cartao', nome: 'Cartão de crédito' },
-    { id: 'emprestimo', nome: 'Empréstimo' },
-    { id: 'impostos', nome: 'Impostos' },
-    { id: 'educacao', nome: 'Educação' },
-    { id: 'saude', nome: 'Saúde' },
-    { id: 'outros', nome: 'Outros' },
+  // Ícones (traço 24×24) usados nas categorias. As categorias personalizadas escolhem um destes.
+  const ICONES = {
+    casa: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+    raio: 'M13 2L4 14h7l-1 8 9-12h-7z',
+    gota: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+    wifi: 'M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01',
+    cartao: 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM2 10h20M6 15h4',
+    banco: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18',
+    documento: 'M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7',
+    capelo: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5',
+    coracao: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+    etiqueta: 'M4 4h7l9 9-7 7-9-9zM8 8h.01',
+    pata: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 14.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 14.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM12 13c-3 0-5 3-5 5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2c0-2-2-5-5-5z',
+    haltere: 'M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12',
+    carro: 'M4 16v-4l2-5h12l2 5v4zM4 16v3M20 16v3M7.5 13h.01M16.5 13h.01',
+    carrinho: 'M3 4h2l2.5 11h11L21 8H7M10 20h.01M17 20h.01',
+    presente: 'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0',
+    aviao: 'M2 13l20-8-6 15-4-6zM12 14l4-6',
+    celular: 'M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+    estrela: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+    ferramenta: 'M15 4a5 5 0 0 0-4 7l-8 8 2 2 8-8a5 5 0 0 0 7-4l-3 3-3-1-1-3z',
+  };
+  const icone = (nome, tam = 18) => `<svg viewBox="0 0 24 24" width="${tam}" height="${tam}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONES[nome] || ICONES.etiqueta}"/></svg>`;
+  // Cores disponíveis: cada uma é um token com versão clara e escura (--c-<nome>).
+  const CORES_CAT = ['moradia', 'energia', 'agua', 'internet', 'cartao', 'emprestimo', 'impostos', 'educacao', 'saude', 'outros'];
+  const CATS_BASE = [
+    { id: 'moradia', nome: 'Moradia', icone: 'casa', cor: 'moradia' },
+    { id: 'energia', nome: 'Energia', icone: 'raio', cor: 'energia' },
+    { id: 'agua', nome: 'Água', icone: 'gota', cor: 'agua' },
+    { id: 'internet', nome: 'Internet e celular', icone: 'wifi', cor: 'internet' },
+    { id: 'cartao', nome: 'Cartão de crédito', icone: 'cartao', cor: 'cartao' },
+    { id: 'emprestimo', nome: 'Empréstimo', icone: 'banco', cor: 'emprestimo' },
+    { id: 'impostos', nome: 'Impostos', icone: 'documento', cor: 'impostos' },
+    { id: 'educacao', nome: 'Educação', icone: 'capelo', cor: 'educacao' },
+    { id: 'saude', nome: 'Saúde', icone: 'coracao', cor: 'saude' },
+    { id: 'outros', nome: 'Outros', icone: 'etiqueta', cor: 'outros' },
   ];
+  // Categorias criadas pela pessoa ficam em state.config.categorias (vão junto com a conta e o backup).
+  const catsPessoais = () => (state.config && Array.isArray(state.config.categorias) ? state.config.categorias : []);
+  const todasCats = () => CATS_BASE.slice(0, -1).concat(catsPessoais(), CATS_BASE.slice(-1));
   const PAGS = ['Pix', 'Boleto', 'Débito automático', 'Cartão', 'Dinheiro'];
   const MESES_FIXA = 12; // contas fixas ficam sempre lançadas até 12 meses à frente
-  const catOf = id => CATS.find(c => c.id === id) || CATS[CATS.length - 1];
-  const cor = id => `var(--c-${catOf(id).id})`;
+  const catOf = id => todasCats().find(c => c.id === id) || CATS_BASE[CATS_BASE.length - 1];
+  const cor = id => `var(--c-${CORES_CAT.includes(catOf(id).cor) ? catOf(id).cor : 'outros'})`;
+  // Selo da categoria: ícone na cor da categoria sobre um fundo claro da mesma cor.
+  const selo = (id, tam = 18) => `<span class="selo" style="--cc:${cor(id)}">${icone(catOf(id).icone, tam)}</span>`;
 
   const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
   const fmt = c => brl.format((c || 0) / 100);
@@ -511,7 +566,9 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       const tocados = new Set();
       Object.values(local.meses).flat().forEach(c => { if (!ids.has(c.id)) tocados.add(colocar(c)); });
       const enc = new Set(state.config.encerradas.concat(local.config.encerradas || []));
-      state.config = { ...state.config, encerradas: [...enc], renda: state.config.renda || local.config.renda || 0 };
+      const idsCat = new Set(catsPessoais().map(c => c.id));
+      const categorias = catsPessoais().concat((local.config.categorias || []).filter(c => !idsCat.has(c.id)));
+      state.config = { ...state.config, encerradas: [...enc], renda: state.config.renda || local.config.renda || 0, categorias };
       tocados.forEach(mk => gravar('c-' + mk));
       gravar('config');
       lsSet(LS_KEY, null);
@@ -687,7 +744,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       let mk = addMes(mesDe(u.venc), 1);
       while (mk <= limite) {
         // Id fixo por grupo e mês: se dois aparelhos criarem a mesma ocorrência, ela não duplica.
-        tocados.add(colocar({ id: `${u.grupo}-${mk}`, grupo: u.grupo, tipo: 'fixa', diaVenc: u.diaVenc, desc: u.desc, cat: u.cat, valor: u.valor, pag: u.pag, venc: vencEm(mk, u.diaVenc), pago: false, ...(u.exemplo ? { exemplo: true } : {}) }));
+        tocados.add(colocar({ id: `${u.grupo}-${mk}`, grupo: u.grupo, tipo: 'fixa', diaVenc: u.diaVenc, desc: u.desc, cat: u.cat, valor: u.valor, pag: u.pag, venc: vencEm(mk, u.diaVenc), pago: false, ...(u.estimado ? { estimado: true } : {}), ...(u.exemplo ? { exemplo: true } : {}) }));
         mk = addMes(mk, 1);
       }
     });
@@ -708,6 +765,25 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
     tocados.forEach(mk => gravar('c-' + mk));
     if (tipo === 'fixa') estenderFixas();
     return n;
+  }
+
+  // Aplica a edição de uma conta fixa ou parcelada a ela e às ocorrências seguintes ainda não pagas.
+  // Devolve quantas contas mudaram.
+  function aplicarNaSerie(g, base) {
+    const novoDia = Number(base.venc.slice(8));
+    const mudouDia = novoDia !== Number(g.venc.slice(8));
+    const seguintes = todas().filter(c => c.grupo === g.grupo && c.venc > g.venc && !c.pago);
+    const tocados = new Set([tirar(g), colocar({ ...base, diaVenc: novoDia })]);
+    seguintes.forEach(c => {
+      const nova = { ...c, valor: base.valor, desc: base.desc, cat: base.cat, pag: base.pag, diaVenc: mudouDia ? novoDia : (c.diaVenc || novoDia) };
+      if (base.estimado) nova.estimado = true; else delete nova.estimado;
+      delete nova.exemplo;
+      if (mudouDia) nova.venc = vencEm(mesDe(c.venc), novoDia);
+      tocados.add(tirar(c));
+      tocados.add(colocar(nova));
+    });
+    tocados.forEach(mk => gravar('c-' + mk));
+    return seguintes.length + 1;
   }
 
   function alternarPaga(c) {
@@ -749,6 +825,8 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         const pago = passou && !(mkK === mk && cat === 'agua');
         const c = { id: novoId() + k, grupo, tipo, diaVenc: dia, desc, cat, valor: cat === 'energia' || cat === 'agua' || cat === 'cartao' ? Math.round(valor * (0.85 + ((k * 7 + dia) % 6) * 0.05)) : valor, pag, venc, pago, exemplo: true };
         if (pago) c.pagoEm = vencEm(mkK, Math.max(1, dia - 1));
+        // Luz, água e cartão ainda não pagos mostram o "valor a confirmar".
+        if (!pago && ['energia', 'agua', 'cartao'].includes(cat)) c.estimado = true;
         if (tipo === 'parcelada') { c.parcela = offsetParc + k + 1; c.parcelas = nParc; }
         tocados.add(colocar(c));
       }
@@ -776,9 +854,10 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
       </button>
       <button class="abrir" data-id="${esc(c.id)}" data-mes="${mesDe(c.venc)}">
-        <span class="t"><span class="sw" style="background:${cor(c.cat)}"></span><em>${esc(c.desc || catOf(c.cat).nome)}</em>${c.exemplo ? '<span class="tag-ex">exemplo</span>' : ''}</span>
-        <span class="v">${fmt(c.valor)}</span>
-        <span class="s">${mostrarMes ? 'Vence ' + ddmm(c.venc) + ' · ' : ''}${extra} · ${esc(c.pag || '')}</span>
+        ${selo(c.cat)}
+        <span class="t"><em>${esc(c.desc || catOf(c.cat).nome)}</em>${c.exemplo ? '<span class="tag-ex">exemplo</span>' : ''}</span>
+        <span class="v">${c.estimado && !c.pago ? '<span class="aprox" title="Valor estimado">~</span>' : ''}${fmt(c.valor)}</span>
+        <span class="s">${c.estimado && !c.pago ? '<b class="a-confirmar">Valor a confirmar</b> · ' : ''}${mostrarMes ? 'Vence ' + ddmm(c.venc) + ' · ' : ''}${extra} · ${esc(c.pag || '')}</span>
         <span class="st ${s.k}">${s.t}</span>
       </button>
     </div>`;
@@ -931,6 +1010,48 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
     return () => c;
   };
 
+  // ---------- Categorias personalizadas ----------
+  // Editor usado no cadastro de conta (prefixo "g") e em Ajustes (prefixo "a").
+  function htmlEditorCategoria(p) {
+    return `<div class="editor-cat">
+      <div class="field"><label for="${p}-cat-nome">Nome da nova categoria</label><input class="input" id="${p}-cat-nome" maxlength="30" placeholder="Ex.: Pet, Academia, Carro" autocomplete="off"></div>
+      <div class="field"><span class="lbl" id="${p}-lbl-ico">Ícone</span>
+        <div class="icones" role="radiogroup" aria-labelledby="${p}-lbl-ico" id="${p}-cat-icone">
+          ${Object.keys(ICONES).map((n, i) => `<button type="button" class="ico-btn" role="radio" data-v="${n}" aria-checked="${i === 10}" aria-label="Ícone ${n}">${icone(n, 20)}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><span class="lbl" id="${p}-lbl-cor">Cor</span>
+        <div class="cores" role="radiogroup" aria-labelledby="${p}-lbl-cor" id="${p}-cat-cor">
+          ${CORES_CAT.map((c, i) => `<button type="button" class="cor-btn cor-btn-p" role="radio" data-v="${c}" aria-checked="${i === 0}" aria-label="Cor ${i + 1}" style="background:var(--c-${c})"></button>`).join('')}
+        </div>
+      </div>
+      <div class="err" id="${p}-cat-err" role="alert"></div>
+      <button type="button" class="btn ghost" id="${p}-cat-criar">Criar categoria</button>
+    </div>`;
+  }
+  const htmlListaCategorias = () => catsPessoais().length
+    ? catsPessoais().map(c => `<div class="cat-linha">${selo(c.id)}<span class="n">${esc(c.nome)}</span><button type="button" data-excluir="${esc(c.id)}">Excluir</button></div>`).join('')
+    : `<p class="note" style="margin:0">Além das categorias prontas, crie as suas, como Pet, Academia ou Carro. Elas aparecem na hora de cadastrar uma conta.</p>`;
+  function ligarEditorCategoria(p, aoCriar) {
+    const escolha = { icone: Object.keys(ICONES)[10], cor: CORES_CAT[0] };
+    [['icone', `${p}-cat-icone`], ['cor', `${p}-cat-cor`]].forEach(([k, id]) => $(id).addEventListener('click', e => {
+      const b = e.target.closest('button[data-v]'); if (!b) return;
+      escolha[k] = b.dataset.v;
+      $(id).querySelectorAll('button[data-v]').forEach(x => x.setAttribute('aria-checked', x === b));
+    }));
+    $(`${p}-cat-criar`).addEventListener('click', () => {
+      const nome = $(`${p}-cat-nome`).value.trim();
+      if (!nome) { $(`${p}-cat-err`).textContent = 'Dê um nome para a categoria.'; $(`${p}-cat-nome`).focus(); return; }
+      if (todasCats().some(c => c.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) { $(`${p}-cat-err`).textContent = 'Já existe uma categoria com esse nome.'; return; }
+      const cat = { id: 'u' + novoId(), nome, icone: escolha.icone, cor: escolha.cor };
+      state.config = { ...state.config, categorias: catsPessoais().concat(cat) };
+      gravar('config');
+      $(`${p}-cat-nome`).value = '';
+      $(`${p}-cat-err`).textContent = '';
+      aoCriar(cat);
+    });
+  }
+
   function abrirConta(g) {
     const editando = !!g;
     const vencPadrao = mesAtual === mesDe(isoHoje()) ? isoHoje() : `${mesAtual}-10`;
@@ -944,14 +1065,23 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         <div class="field"><label for="g-desc">Descrição</label><input class="input" id="g-desc" maxlength="60" placeholder="Ex.: Aluguel, conta de luz, fatura do cartão" value="${esc(atual.desc)}" autocomplete="off"></div>
         <div class="field"><span class="lbl" id="lbl-cat">Categoria</span>
           <div class="chips" role="radiogroup" aria-labelledby="lbl-cat" id="g-cats">
-            ${CATS.map(c => `<button type="button" class="chip" role="radio" data-v="${c.id}" aria-checked="${c.id === atual.cat}"><span class="sw" style="background:${cor(c.id)}"></span>${c.nome}</button>`).join('')}
+            ${todasCats().map(c => `<button type="button" class="chip" role="radio" data-v="${c.id}" aria-checked="${c.id === atual.cat}">${selo(c.id, 14)}${esc(c.nome)}</button>`).join('')}
+            <button type="button" class="chip chip-nova" id="g-nova-cat" aria-expanded="false">+ Nova categoria</button>
           </div>
+          <div id="g-editor-cat" hidden>${htmlEditorCategoria('g')}</div>
         </div>
         <div class="two">
           <div class="field"><label for="g-venc">Vencimento</label><input class="input" type="date" id="g-venc" value="${atual.venc}"></div>
           <div class="field"><label for="g-pag">Pagar com</label><select class="input" id="g-pag">${PAGS.map(p => `<option${p === atual.pag ? ' selected' : ''}>${p}</option>`).join('')}</select></div>
         </div>
-        ${editando ? (temSerie ? `<div class="parcela-info">${g.tipo === 'parcelada' ? `Parcela ${g.parcela} de ${g.parcelas}` : 'Conta fixa mensal'} · alterações valem só para este mês</div>` : '') : `
+        <label class="toggle"><input type="checkbox" id="g-est" ${atual.estimado ? 'checked' : ''}> <span>Valor estimado<small class="note">Para contas que mudam todo mês, como luz, água e cartão. O app marca "valor a confirmar" e o aviso lembra de atualizar quando a fatura chegar.</small></span></label>
+        ${editando ? (temSerie ? `<div class="field"><span class="lbl" id="lbl-escopo">${g.tipo === 'parcelada' ? `Parcela ${g.parcela} de ${g.parcelas}` : 'Conta fixa mensal'} · aplicar alterações a</span>
+          <div class="seg seg-2" role="radiogroup" aria-labelledby="lbl-escopo" id="g-escopo">
+            <button type="button" role="radio" data-v="este" aria-checked="true">Só este mês</button>
+            <button type="button" role="radio" data-v="proximos" aria-checked="false">Este e os próximos</button>
+          </div>
+          <span class="note" id="g-escopo-info" hidden>Valor, descrição, categoria, forma de pagamento e dia de vencimento mudam neste mês e nos seguintes que ainda não foram pagos. Os meses anteriores ficam como estão.</span>
+        </div>` : '') : `
         <div class="field"><span class="lbl" id="lbl-rep">Repetição</span>
           <div class="seg" role="radiogroup" aria-labelledby="lbl-rep" id="g-tipo">
             <button type="button" role="radio" data-v="unica" aria-checked="true">Só uma vez</button>
@@ -973,10 +1103,26 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       </form>`, () => {
       const valor = mascaraValor($('g-valor'), atual.valor);
       if (!editando) setTimeout(() => $('g-valor').focus(), 60);
-      $('g-cats').addEventListener('click', e => {
-        const b = e.target.closest('.chip'); if (!b) return;
+      const escolherCat = b => {
         atual.cat = b.dataset.v;
-        $('g-cats').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-checked', c === b));
+        $('g-cats').querySelectorAll('.chip[data-v]').forEach(c => c.setAttribute('aria-checked', c === b));
+      };
+      $('g-cats').addEventListener('click', e => {
+        if (e.target.closest('#g-nova-cat')) {
+          const ed = $('g-editor-cat');
+          ed.hidden = !ed.hidden;
+          $('g-nova-cat').setAttribute('aria-expanded', !ed.hidden);
+          if (!ed.hidden) $('g-cat-nome').focus();
+          return;
+        }
+        const b = e.target.closest('.chip[data-v]'); if (b) escolherCat(b);
+      });
+      ligarEditorCategoria('g', cat => {
+        $('g-nova-cat').insertAdjacentHTML('beforebegin', `<button type="button" class="chip" role="radio" data-v="${cat.id}" aria-checked="false">${selo(cat.id, 14)}${esc(cat.nome)}</button>`);
+        escolherCat($('g-cats').querySelector(`[data-v="${cat.id}"]`));
+        $('g-editor-cat').hidden = true;
+        $('g-nova-cat').setAttribute('aria-expanded', 'false');
+        toast(`Categoria ${cat.nome} criada`);
       });
       const parcInfo = () => {
         const n = Number($('g-parc').value) || 0;
@@ -993,6 +1139,15 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         ['g-parc', 'g-venc', 'g-valor'].forEach(id => $(id).addEventListener('input', parcInfo));
       }
       $('g-pago').addEventListener('change', () => { $('box-pagoem').hidden = !$('g-pago').checked; });
+      // Ao digitar o valor real de uma conta estimada, ela passa a ser valor confirmado.
+      if (editando && g.estimado) $('g-valor').addEventListener('input', () => { $('g-est').checked = false; });
+      let escopo = 'este';
+      if (temSerie) $('g-escopo').addEventListener('click', e => {
+        const b = e.target.closest('button[data-v]'); if (!b) return;
+        escopo = b.dataset.v;
+        $('g-escopo').querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', x === b));
+        $('g-escopo-info').hidden = escopo !== 'proximos';
+      });
 
       const armar = (btn, acao) => btn && btn.addEventListener('click', () => {
         if (!btn.classList.contains('armed')) { btn.classList.add('armed'); btn.textContent = 'Toque para confirmar'; return; }
@@ -1017,10 +1172,15 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         if (!/^\d{4}-\d{2}-\d{2}$/.test(venc)) { $('g-err').textContent = 'Escolha a data de vencimento.'; return; }
         const nParc = Math.round(Number(editando ? 0 : $('g-parc').value));
         if (!editando && tipo === 'parcelada' && !(nParc >= 2 && nParc <= 72)) { $('g-err').textContent = 'Use de 2 a 72 parcelas.'; return; }
-        const base = { ...atual, valor: valor(), desc: $('g-desc').value.trim(), pag: $('g-pag').value, venc, pago };
+        const base = { ...atual, valor: valor(), desc: $('g-desc').value.trim(), pag: $('g-pag').value, venc, pago, estimado: $('g-est').checked };
+        if (!base.estimado) delete base.estimado;
         if (pago) base.pagoEm = $('g-pagoem').value || isoHoje(); else delete base.pagoEm;
         let msg;
-        if (editando) {
+        if (editando && escopo === 'proximos') {
+          delete base.exemplo;
+          const n = aplicarNaSerie(g, base);
+          msg = n > 1 ? `Alterações salvas neste mês e em mais ${n - 1}` : 'Alterações salvas';
+        } else if (editando) {
           delete base.exemplo;
           if (g.diaVenc && mesDe(venc) === mesDe(g.venc)) base.diaVenc = g.diaVenc;
           salvarConta(base, g);
@@ -1127,12 +1287,19 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
     { id: 'cartoes', nome: 'Cartões', icone: '<i style="gap:4px"><b style="height:6px"></b><b style="height:6px"></b></i>' },
     { id: 'compacto', nome: 'Compacto', icone: '<i><b style="height:2px"></b><b style="height:2px"></b><b style="height:2px"></b><b style="height:2px"></b></i>' },
   ];
-  const lerAparencia = () => { try { return { cor: 'verde', tema: 'auto', layout: 'cupom', ...JSON.parse(lsGet(LS_APARENCIA) || '{}') }; } catch (e) { return { cor: 'verde', tema: 'auto', layout: 'cupom' }; } };
+  const TEXTOS = [
+    { id: 'normal', nome: 'Normal', amostra: '15px' },
+    { id: 'grande', nome: 'Grande', amostra: '17px' },
+    { id: 'maior', nome: 'Maior', amostra: '19px' },
+  ];
+  const APARENCIA_PADRAO = { cor: 'verde', tema: 'auto', layout: 'cupom', texto: 'normal' };
+  const lerAparencia = () => { try { return { ...APARENCIA_PADRAO, ...JSON.parse(lsGet(LS_APARENCIA) || '{}') }; } catch (e) { return { ...APARENCIA_PADRAO }; } };
   function aplicarAparencia(a) {
     const r = document.documentElement;
     if (a.cor && a.cor !== 'verde') r.dataset.cor = a.cor; else delete r.dataset.cor;
     if (a.tema === 'claro') r.dataset.theme = 'light'; else if (a.tema === 'escuro') r.dataset.theme = 'dark'; else delete r.dataset.theme;
     if (a.layout && a.layout !== 'cupom') r.dataset.layout = a.layout; else delete r.dataset.layout;
+    if (a.texto && a.texto !== 'normal') r.dataset.texto = a.texto; else delete r.dataset.texto;
     // Cor da barra do sistema no celular acompanha o cabeçalho.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = getComputedStyle(r).getPropertyValue('--accent').trim() || '#0e5c56';
@@ -1150,6 +1317,11 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
           ${TEMAS.map(t => `<button type="button" role="radio" data-v="${t.id}" aria-checked="${a.tema === t.id}">${t.nome}</button>`).join('')}
         </div>
       </div>
+      <div class="field"><span class="lbl" id="lbl-texto">Tamanho do texto</span>
+        <div class="seg" role="radiogroup" aria-labelledby="lbl-texto" id="ap-texto">
+          ${TEXTOS.map(t => `<button type="button" role="radio" data-v="${t.id}" aria-checked="${a.texto === t.id}" style="font-size:${t.amostra}">${t.nome}</button>`).join('')}
+        </div>
+      </div>
       <div class="field"><span class="lbl" id="lbl-lay">Layout</span>
         <div class="seg" role="radiogroup" aria-labelledby="lbl-lay" id="ap-layout">
           ${LAYOUTS.map(l => `<button type="button" class="lay" role="radio" data-v="${l.id}" aria-checked="${a.layout === l.id}">${l.icone}${l.nome}</button>`).join('')}
@@ -1159,7 +1331,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       <hr class="dash" style="margin:2px 0">`;
   }
   function ligarAparencia() {
-    [['ap-cor', 'cor'], ['ap-tema', 'tema'], ['ap-layout', 'layout']].forEach(([id, chave]) => {
+    [['ap-cor', 'cor'], ['ap-tema', 'tema'], ['ap-texto', 'texto'], ['ap-layout', 'layout']].forEach(([id, chave]) => {
       $(id).addEventListener('click', e => {
         const b = e.target.closest('button[data-v]'); if (!b) return;
         const a = { ...lerAparencia(), [chave]: b.dataset.v };
@@ -1186,6 +1358,11 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         <hr class="dash" style="margin:2px 0">` : ''}
       ${htmlAvisos()}
       ${htmlAparencia()}
+      <h2>Suas categorias</h2>
+      <div class="cat-lista" id="a-cats">${htmlListaCategorias()}</div>
+      <button type="button" class="btn ghost" id="a-nova-cat" aria-expanded="false">+ Nova categoria</button>
+      <div id="a-editor-cat" hidden>${htmlEditorCategoria('a')}</div>
+      <hr class="dash" style="margin:2px 0">
       <div class="field"><label for="a-renda">Renda mensal</label>
         <div class="amount-wrap"><span>R$</span><input class="amount" id="a-renda" inputmode="numeric" autocomplete="off" style="font-size:26px" value="${((state.config.renda || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}"></div>
         <span class="note">Opcional. Mostra quanto sobra depois das contas de cada mês. Use 0,00 para não mostrar.</span>
@@ -1215,6 +1392,27 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
       });
       ligarAvisos();
       ligarAparencia();
+      $('a-nova-cat').addEventListener('click', () => {
+        const ed = $('a-editor-cat');
+        ed.hidden = !ed.hidden;
+        $('a-nova-cat').setAttribute('aria-expanded', !ed.hidden);
+        if (!ed.hidden) $('a-cat-nome').focus();
+      });
+      ligarEditorCategoria('a', cat => {
+        $('a-cats').innerHTML = htmlListaCategorias();
+        $('a-editor-cat').hidden = true;
+        toast(`Categoria ${cat.nome} criada`);
+      });
+      $('a-cats').addEventListener('click', e => {
+        const b = e.target.closest('button[data-excluir]'); if (!b) return;
+        if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Confirmar'; return; }
+        const cat = catOf(b.dataset.excluir);
+        state.config = { ...state.config, categorias: catsPessoais().filter(c => c.id !== b.dataset.excluir) };
+        gravar('config');
+        $('a-cats').innerHTML = htmlListaCategorias();
+        render();
+        toast(`Categoria ${cat.nome} excluída. As contas dela aparecem em Outros.`);
+      });
       const entrar = $('a-entrar');
       if (entrar) entrar.addEventListener('click', () => { lsSet(LS_SEM_CONTA, null); abrirLogin(); });
       $('a-backup').addEventListener('click', async () => { await fazerBackup(); fecharFolha(); render(); });
