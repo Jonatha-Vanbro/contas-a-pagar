@@ -1,6 +1,6 @@
 // Robô diário: lê as contas de quem ativou os avisos e manda a notificação de vencimento.
-// Roda no GitHub Actions (.github/workflows/avisos.yml) com a chave da conta de serviço do Firebase
-// guardada no segredo FIREBASE_SERVICE_ACCOUNT.
+// Roda no GitHub Actions (.github/workflows/avisos.yml) com a chave de uma conta de serviço restrita,
+// guardada no segredo FIREBASE_SERVICE_ACCOUNT, que só pode ler o Firestore e enviar notificações.
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -22,8 +22,14 @@ const hoje = hojeEmBrasilia();
 const meses = mesesParaLer(hoje);
 console.log(`Hoje (Brasília): ${hoje}${TESTE ? ' · modo teste' : ''}`);
 
-let pessoas = 0, enviados = 0, removidos = 0;
-const usuarios = await db.collection('usuarios').listDocuments();
+let pessoas = 0, enviados = 0, inativos = 0;
+let usuarios;
+try {
+  usuarios = await db.collection('usuarios').listDocuments();
+} catch (e) {
+  console.error('Não foi possível ler o banco. Confira se a conta de serviço tem o papel "Leitor do Cloud Datastore" (Cloud Datastore Viewer).');
+  throw e;
+}
 for (const ref of usuarios) {
   const dispositivos = await ref.collection('dispositivos').get();
   if (dispositivos.empty) continue;
@@ -49,16 +55,13 @@ for (const ref of usuarios) {
   });
   enviados += r.successCount;
 
-  // Aparelhos que desinstalaram o app ou bloquearam as notificações: tira da lista.
-  await Promise.all(r.responses.map((resp, i) => {
+  // A chave do robô só tem permissão de leitura, então ele não apaga nada: aparelhos que desinstalaram
+  // o app ou bloquearam as notificações apenas aparecem aqui como inativos.
+  r.responses.forEach(resp => {
     const codigo = resp.error && resp.error.code;
-    if (codigo === 'messaging/registration-token-not-registered' || codigo === 'messaging/invalid-registration-token') {
-      removidos++;
-      return dispositivos.docs[i].ref.delete();
-    }
-    if (resp.error) console.warn(`Falha ao enviar para um aparelho: ${codigo}`);
-    return null;
-  }));
+    if (codigo === 'messaging/registration-token-not-registered' || codigo === 'messaging/invalid-registration-token') inativos++;
+    else if (resp.error) console.warn(`Falha ao enviar para um aparelho: ${codigo}`);
+  });
 }
 
-console.log(`Pessoas com avisos ativos: ${pessoas} · notificações enviadas: ${enviados} · aparelhos removidos: ${removidos}`);
+console.log(`Pessoas com avisos ativos: ${pessoas} · notificações enviadas: ${enviados} · aparelhos inativos: ${inativos}`);

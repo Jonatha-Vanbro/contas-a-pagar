@@ -43,7 +43,12 @@ Um robô no GitHub Actions ([`.github/workflows/avisos.yml`](.github/workflows/a
 Configuração (uma vez):
 
 1. **Chave pública de notificações:** no console do Firebase, **Configurações do projeto → Cloud Messaging → Configuração da Web → Certificados push da Web → Gerar par de chaves**. Copie a chave para `vapidKey` em [`firebase-config.js`](firebase-config.js).
-2. **Chave da conta de serviço** (deixa o robô ler as contas): **Configurações do projeto → Contas de serviço → Gerar nova chave privada**. Abra o arquivo `.json` baixado, copie todo o conteúdo e, no GitHub, vá em **Settings → Secrets and variables → Actions → New repository secret**, com o nome `FIREBASE_SERVICE_ACCOUNT`. Não envie essa chave para ninguém nem a coloque nos arquivos do repositório; depois de salvar no GitHub, apague o arquivo baixado.
+2. **Chave restrita do robô** (só lê as contas e envia notificações; não altera nem apaga nada). Não use a chave padrão de "Gerar nova chave privada" do Firebase, que tem acesso total.
+   1. Abra <https://console.cloud.google.com/iam-admin/serviceaccounts?project=contas-a-pagar-b86cb> e clique em **Criar conta de serviço**. Nome: `robo-avisos`. Clique em **Criar e continuar**.
+   2. Em **Conceder acesso**, adicione dois papéis: **Leitor do Cloud Datastore** (*Cloud Datastore Viewer*) e **Administrador da API Firebase Cloud Messaging** (*Firebase Cloud Messaging API Admin*). Clique em **Continuar** e **Concluir**.
+   3. Abra a conta `robo-avisos` → aba **Chaves** → **Adicionar chave → Criar nova chave → JSON → Criar**. O arquivo `.json` é baixado.
+
+   Abra o arquivo `.json`, copie todo o conteúdo e, no GitHub, vá em **Settings → Secrets and variables → Actions → New repository secret**, com o nome `FIREBASE_SERVICE_ACCOUNT`. Não envie essa chave para ninguém nem a coloque nos arquivos do repositório; depois de salvar no GitHub, apague o arquivo baixado.
 3. No celular, abra o app instalado, entre na conta e toque em **Ajustes → Ativar avisos neste celular**.
 4. Para testar na hora: no GitHub, **Actions → Avisos de vencimento → Run workflow**, marque *Mandar um aviso de teste* e confirme.
 
