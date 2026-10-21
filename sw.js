@@ -1,5 +1,5 @@
 // Deixa o app abrir sem internet. Ao publicar uma nova versão, mude VERSAO.
-const VERSAO = 'contas-v4';
+const VERSAO = 'contas-v5';
 const ARQUIVOS = [
   './',
   'index.html',
