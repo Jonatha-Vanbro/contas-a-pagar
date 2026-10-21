@@ -1,5 +1,5 @@
 // Deixa o app abrir sem internet. Ao publicar uma nova versão, mude VERSAO.
-const VERSAO = 'contas-v5';
+const VERSAO = 'contas-v6';
 const ARQUIVOS = [
   './',
   'index.html',
@@ -30,9 +30,10 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
 
   // Página: tenta a rede primeiro para receber atualizações; sem internet, usa a cópia guardada.
+  // "no-cache" faz o navegador conferir com o GitHub se há versão nova em vez de usar a cópia de até 10 minutos.
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
         .then(r => { const copia = r.clone(); caches.open(VERSAO).then(c => c.put('index.html', copia)); return r; })
         .catch(() => caches.match('index.html'))
     );
@@ -56,7 +57,7 @@ self.addEventListener('fetch', e => {
     // Scripts do app: rede primeiro (para receber correções e a configuração do Firebase), cópia sem internet.
     if (url.pathname.endsWith('.js')) {
       e.respondWith(
-        fetch(req)
+        fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
           .then(r => { const copia = r.clone(); caches.open(VERSAO).then(c => c.put(req, copia)); return r; })
           .catch(() => caches.match(req))
       );
