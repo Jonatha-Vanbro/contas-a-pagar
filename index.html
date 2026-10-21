@@ -13,6 +13,17 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Contas a Pagar</title>
 <meta name="theme-color" content="#0e5c56">
+<script>
+  // Aparência escolhida em Ajustes (cor, tema e layout). Aplicada antes de desenhar a página para não piscar.
+  try {
+    const a = JSON.parse(localStorage.getItem('contas-a-pagar-aparencia') || '{}');
+    const r = document.documentElement;
+    if (a.cor) r.dataset.cor = a.cor;
+    if (a.tema === 'claro') r.dataset.theme = 'light';
+    if (a.tema === 'escuro') r.dataset.theme = 'dark';
+    if (a.layout) r.dataset.layout = a.layout;
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -210,6 +221,55 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
 .toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--fg); color: var(--bg);
   padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); max-width: calc(100% - 32px); display: flex; gap: 12px; align-items: center; }
 .toast button { border: 0; background: none; color: var(--accent-soft); font-weight: 700; padding: 0; }
+
+/* ---------- Aparência: cores (data-cor), cada uma com versão clara e escura ---------- */
+:root[data-cor="azul"] { --accent: #1f4fa8; --accent-fg: #ffffff; --accent-soft: #dbe5f7; }
+:root[data-cor="roxo"] { --accent: #5b3ea8; --accent-fg: #ffffff; --accent-soft: #e6defa; }
+:root[data-cor="vinho"] { --accent: #8f2a45; --accent-fg: #ffffff; --accent-soft: #f5dde4; }
+:root[data-cor="grafite"] { --accent: #2f3a40; --accent-fg: #ffffff; --accent-soft: #e1e6e8; }
+@media (prefers-color-scheme: dark) {
+  :root[data-cor="azul"]:not([data-theme="light"]) { --accent: #7fa7ee; --accent-fg: #0a1630; --accent-soft: #18264a; }
+  :root[data-cor="roxo"]:not([data-theme="light"]) { --accent: #b39cf0; --accent-fg: #170f30; --accent-soft: #2a2147; }
+  :root[data-cor="vinho"]:not([data-theme="light"]) { --accent: #ec8fa8; --accent-fg: #2a0a14; --accent-soft: #3d1c27; }
+  :root[data-cor="grafite"]:not([data-theme="light"]) { --accent: #c9d3d8; --accent-fg: #12181b; --accent-soft: #263035; }
+}
+:root[data-cor="azul"][data-theme="dark"] { --accent: #7fa7ee; --accent-fg: #0a1630; --accent-soft: #18264a; }
+:root[data-cor="roxo"][data-theme="dark"] { --accent: #b39cf0; --accent-fg: #170f30; --accent-soft: #2a2147; }
+:root[data-cor="vinho"][data-theme="dark"] { --accent: #ec8fa8; --accent-fg: #2a0a14; --accent-soft: #3d1c27; }
+:root[data-cor="grafite"][data-theme="dark"] { --accent: #c9d3d8; --accent-fg: #12181b; --accent-soft: #263035; }
+
+/* ---------- Aparência: layouts (data-layout) ---------- */
+/* Cartões: resumo arredondado sem picote e cada conta em um cartão separado. */
+[data-layout="cartoes"] .cupom { border-radius: 18px; }
+[data-layout="cartoes"] .cupom::after { display: none; }
+[data-layout="cartoes"] .items { background: none; display: grid; gap: 8px; overflow: visible; }
+[data-layout="cartoes"] .item { background: var(--surface); border-radius: 14px; overflow: hidden; }
+[data-layout="cartoes"] .item + .item { border-top: 0; }
+[data-layout="cartoes"] .cats, [data-layout="cartoes"] .chart, [data-layout="cartoes"] .empty { border-radius: 18px; }
+/* Compacto: mais contas na tela, resumo menor. */
+[data-layout="compacto"] main { gap: 12px; padding-block: 10px; }
+[data-layout="compacto"] .cupom { padding: 12px 14px 12px; }
+[data-layout="compacto"] .total { font-size: 26px; }
+[data-layout="compacto"] .budget-line { margin-top: 6px; }
+[data-layout="compacto"] .pills { margin-top: 8px; }
+[data-layout="compacto"] .dash { margin: 10px 0 8px; }
+[data-layout="compacto"] .section-head { margin-bottom: 4px; }
+[data-layout="compacto"] h2 { font-size: 15px; }
+[data-layout="compacto"] .check { min-height: 46px; }
+[data-layout="compacto"] .check span { width: 22px; height: 22px; }
+[data-layout="compacto"] .abrir { padding-block: 7px; }
+[data-layout="compacto"] .item .t, [data-layout="compacto"] .item .v { font-size: 14px; }
+[data-layout="compacto"] .item .s, [data-layout="compacto"] .st { font-size: 11px; }
+[data-layout="compacto"] .month-nav { margin-top: 6px; }
+[data-layout="compacto"] .top { padding-block: 8px 10px; }
+
+/* Seletores da seção Aparência */
+.cores { display: flex; flex-wrap: wrap; gap: 10px; }
+.cor-btn { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1.5px var(--line); padding: 0; }
+.cor-btn[aria-checked="true"] { box-shadow: 0 0 0 2.5px var(--fg); }
+.seg button.lay { display: grid; justify-items: center; gap: 4px; padding-block: 8px; }
+.lay i { display: grid; gap: 2px; width: 30px; }
+.lay i b { display: block; height: 4px; border-radius: 2px; background: currentColor; opacity: .55; }
 
 /* Tela de login */
 .login { position: fixed; inset: 0; z-index: 25; background: var(--bg); overflow-y: auto;
@@ -1051,6 +1111,65 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
     });
   }
 
+  // ---------- Aparência (cor, tema, layout) ----------
+  // Fica guardada neste aparelho; o script no <head> aplica antes de desenhar a página.
+  const LS_APARENCIA = 'contas-a-pagar-aparencia';
+  const CORES = [
+    { id: 'verde', nome: 'Verde', amostra: '#0e5c56' },
+    { id: 'azul', nome: 'Azul', amostra: '#1f4fa8' },
+    { id: 'roxo', nome: 'Roxo', amostra: '#5b3ea8' },
+    { id: 'vinho', nome: 'Vinho', amostra: '#8f2a45' },
+    { id: 'grafite', nome: 'Grafite', amostra: '#2f3a40' },
+  ];
+  const TEMAS = [{ id: 'auto', nome: 'Automático' }, { id: 'claro', nome: 'Claro' }, { id: 'escuro', nome: 'Escuro' }];
+  const LAYOUTS = [
+    { id: 'cupom', nome: 'Cupom', icone: '<i><b style="height:9px"></b><b></b><b></b></i>' },
+    { id: 'cartoes', nome: 'Cartões', icone: '<i style="gap:4px"><b style="height:6px"></b><b style="height:6px"></b></i>' },
+    { id: 'compacto', nome: 'Compacto', icone: '<i><b style="height:2px"></b><b style="height:2px"></b><b style="height:2px"></b><b style="height:2px"></b></i>' },
+  ];
+  const lerAparencia = () => { try { return { cor: 'verde', tema: 'auto', layout: 'cupom', ...JSON.parse(lsGet(LS_APARENCIA) || '{}') }; } catch (e) { return { cor: 'verde', tema: 'auto', layout: 'cupom' }; } };
+  function aplicarAparencia(a) {
+    const r = document.documentElement;
+    if (a.cor && a.cor !== 'verde') r.dataset.cor = a.cor; else delete r.dataset.cor;
+    if (a.tema === 'claro') r.dataset.theme = 'light'; else if (a.tema === 'escuro') r.dataset.theme = 'dark'; else delete r.dataset.theme;
+    if (a.layout && a.layout !== 'cupom') r.dataset.layout = a.layout; else delete r.dataset.layout;
+    // Cor da barra do sistema no celular acompanha o cabeçalho.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = getComputedStyle(r).getPropertyValue('--accent').trim() || '#0e5c56';
+  }
+  function htmlAparencia() {
+    const a = lerAparencia();
+    return `<h2>Aparência</h2>
+      <div class="field"><span class="lbl" id="lbl-cor">Cor</span>
+        <div class="cores" role="radiogroup" aria-labelledby="lbl-cor" id="ap-cor">
+          ${CORES.map(c => `<button type="button" class="cor-btn" role="radio" data-v="${c.id}" aria-checked="${a.cor === c.id}" aria-label="${c.nome}" title="${c.nome}" style="background:${c.amostra}"></button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><span class="lbl" id="lbl-tema">Tema</span>
+        <div class="seg" role="radiogroup" aria-labelledby="lbl-tema" id="ap-tema">
+          ${TEMAS.map(t => `<button type="button" role="radio" data-v="${t.id}" aria-checked="${a.tema === t.id}">${t.nome}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><span class="lbl" id="lbl-lay">Layout</span>
+        <div class="seg" role="radiogroup" aria-labelledby="lbl-lay" id="ap-layout">
+          ${LAYOUTS.map(l => `<button type="button" class="lay" role="radio" data-v="${l.id}" aria-checked="${a.layout === l.id}">${l.icone}${l.nome}</button>`).join('')}
+        </div>
+        <span class="note">A aparência vale só para este aparelho.</span>
+      </div>
+      <hr class="dash" style="margin:2px 0">`;
+  }
+  function ligarAparencia() {
+    [['ap-cor', 'cor'], ['ap-tema', 'tema'], ['ap-layout', 'layout']].forEach(([id, chave]) => {
+      $(id).addEventListener('click', e => {
+        const b = e.target.closest('button[data-v]'); if (!b) return;
+        const a = { ...lerAparencia(), [chave]: b.dataset.v };
+        lsSet(LS_APARENCIA, JSON.stringify(a));
+        $(id).querySelectorAll('button[data-v]').forEach(x => x.setAttribute('aria-checked', x === b));
+        aplicarAparencia(a);
+      });
+    });
+  }
+
   function abrirAjustes() {
     const ub = state.config.ultimoBackup;
     const diasBackup = ub ? diaNum(isoHoje()) - diaNum(ub) : null;
@@ -1066,6 +1185,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         <button class="btn" id="a-entrar">Entrar ou criar conta</button>
         <hr class="dash" style="margin:2px 0">` : ''}
       ${htmlAvisos()}
+      ${htmlAparencia()}
       <div class="field"><label for="a-renda">Renda mensal</label>
         <div class="amount-wrap"><span>R$</span><input class="amount" id="a-renda" inputmode="numeric" autocomplete="off" style="font-size:26px" value="${((state.config.renda || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}"></div>
         <span class="note">Opcional. Mostra quanto sobra depois das contas de cada mês. Use 0,00 para não mostrar.</span>
@@ -1094,6 +1214,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         await Nuvem.sair();
       });
       ligarAvisos();
+      ligarAparencia();
       const entrar = $('a-entrar');
       if (entrar) entrar.addEventListener('click', () => { lsSet(LS_SEM_CONTA, null); abrirLogin(); });
       $('a-backup').addEventListener('click', async () => { await fazerBackup(); fecharFolha(); render(); });
@@ -1181,6 +1302,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
   if (lsGet(LS_SESSAO) === '1') carregando = true; else lerLocal();
   estenderFixas();
   render();
+  aplicarAparencia(lerAparencia());
   pedirPersistencia();
   const aoNuvemPronta = () => {
     if (window.Nuvem && Nuvem.configurado) { conectarNuvem(); return; }
