@@ -1087,7 +1087,7 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
           <div class="field"><label for="g-venc">Vencimento</label><input class="input" type="date" id="g-venc" value="${atual.venc}"></div>
           <div class="field"><label for="g-pag">Pagar com</label><select class="input" id="g-pag">${PAGS.map(p => `<option${p === atual.pag ? ' selected' : ''}>${p}</option>`).join('')}</select></div>
         </div>
-        <label class="toggle"><input type="checkbox" id="g-est" ${atual.estimado ? 'checked' : ''}> <span>Valor estimado<small class="note">Para contas que mudam todo mês, como luz, água e cartão. O app marca "valor a confirmar" e o aviso lembra de atualizar quando a fatura chegar.</small></span></label>
+        <label class="toggle"><input type="checkbox" id="g-est" ${atual.estimado ? 'checked' : ''}> <span>Valor estimado<small class="note">Para contas que mudam todo mês, como luz, água e cartão. O app marca "valor a confirmar" e o aviso lembra de atualizar quando a fatura chegar. Se ainda não souber o valor, pode deixar R$ 0,00.</small></span></label>
         ${editando ? (temSerie ? `<div class="field"><span class="lbl" id="lbl-escopo">${g.tipo === 'parcelada' ? `Parcela ${g.parcela} de ${g.parcelas}` : 'Conta fixa mensal'} · aplicar alterações a</span>
           <div class="seg seg-2" role="radiogroup" aria-labelledby="lbl-escopo" id="g-escopo">
             <button type="button" role="radio" data-v="este" aria-checked="true">Só este mês</button>
@@ -1181,11 +1181,11 @@ h2 .cnt { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-
         e.preventDefault();
         const venc = $('g-venc').value;
         const pago = $('g-pago').checked;
-        if (!valor()) { $('g-err').textContent = 'Informe um valor maior que zero.'; $('g-valor').focus(); return; }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(venc)) { $('g-err').textContent = 'Escolha a data de vencimento.'; return; }
         const nParc = Math.round(Number(editando ? 0 : $('g-parc').value));
         if (!editando && tipo === 'parcelada' && !(nParc >= 2 && nParc <= 72)) { $('g-err').textContent = 'Use de 2 a 72 parcelas.'; return; }
-        const base = { ...atual, valor: valor(), desc: $('g-desc').value.trim(), pag: $('g-pag').value, venc, pago, estimado: $('g-est').checked };
+        // Conta em aberto sem valor (R$ 0,00) fica como "valor a confirmar" até a fatura chegar.
+        const base = { ...atual, valor: valor(), desc: $('g-desc').value.trim(), pag: $('g-pag').value, venc, pago, estimado: $('g-est').checked || (!valor() && !pago) };
         if (!base.estimado) delete base.estimado;
         if (pago) base.pagoEm = $('g-pagoem').value || isoHoje(); else delete base.pagoEm;
         let msg;
