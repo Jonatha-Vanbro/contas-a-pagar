@@ -21,7 +21,8 @@ export function mesesParaLer(hoje) {
 const quando = d => d === 0 ? 'hoje' : d === 1 ? 'amanhã' : `em ${d} dias`;
 const nomeDe = c => c.desc || 'Conta sem descrição';
 // Valor estimado (conta que muda todo mês e ainda não teve o valor confirmado) aparece com "~".
-const valorDe = c => (c.estimado ? '~' : '') + fmt(c.valor);
+// Estimada ainda sem valor (R$ 0,00) aparece como "valor a confirmar".
+const valorDe = c => c.estimado && !c.valor ? 'valor a confirmar' : (c.estimado ? '~' : '') + fmt(c.valor);
 // Dias antes do vencimento em que o robô pede para confirmar um valor estimado, mesmo sem outro aviso.
 export const DIAS_CONFIRMAR = 5;
 
@@ -43,7 +44,7 @@ export function montarAviso(contas, hoje, notif) {
   if (!proximas.length && !vencidas.length) {
     const c = aConfirmar.find(x => diaNum(x.venc) - h === DIAS_CONFIRMAR);
     return aConfirmar.length === 1
-      ? { titulo: `Confirme o valor: ${nomeDe(c)}`, corpo: `Vence em ${DIAS_CONFIRMAR} dias · estimado em ${fmt(c.valor)}. Atualize quando a fatura chegar.` }
+      ? { titulo: `Confirme o valor: ${nomeDe(c)}`, corpo: `Vence em ${DIAS_CONFIRMAR} dias · ${c.valor ? 'estimado em ' + fmt(c.valor) : 'ainda sem valor'}. Atualize quando a fatura chegar.` }
       : { titulo: `${aConfirmar.length} contas com valor a confirmar`, corpo: linhaConfirmar };
   }
 
@@ -51,7 +52,7 @@ export function montarAviso(contas, hoje, notif) {
   if (proximas.length === 1 && !vencidas.length) {
     const { c, d } = proximas[0];
     const corpo = c.estimado
-      ? `Valor estimado ${fmt(c.valor)} · confirme quando a fatura chegar`
+      ? `${c.valor ? 'Valor estimado ' + fmt(c.valor) : 'Ainda sem valor'} · confirme quando a fatura chegar`
       : `${fmt(c.valor)}${c.pag ? ' · ' + c.pag : ''}`;
     return { titulo: `${nomeDe(c)} vence ${quando(d)}`, corpo: [corpo, aConfirmar.some(x => x !== c) ? linhaConfirmar : ''].filter(Boolean).join('\n') };
   }
