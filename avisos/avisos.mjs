@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { hojeEmBrasilia, mesesParaLer, montarAviso } from './regras.mjs';
 
-const URL_APP = 'https://jonatha-vanbro.github.io/contas-a-pagar/';
+const URL_APP = 'https://jonatha-sts.github.io/contas-a-pagar/';
 const TESTE = process.env.TESTE === 'true';
 
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {

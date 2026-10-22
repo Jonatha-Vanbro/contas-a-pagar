@@ -13,7 +13,7 @@ App de celular para controlar contas a pagar: vencimentos, contas fixas mensais,
 4. Menu **Criação → Authentication → Vamos começar**. Em **Método de login**, ative:
    - **E-mail/senha**
    - **Google** (escolha seu e-mail como e-mail de suporte)
-5. Ainda em Authentication, abra **Configurações → Domínios autorizados** e adicione `jonatha-vanbro.github.io`.
+5. Ainda em Authentication, abra **Configurações → Domínios autorizados** e adicione `jonatha-sts.github.io`.
 6. Menu **Criação → Firestore Database → Criar banco de dados**. Escolha o local `southamerica-east1 (São Paulo)` e o **modo de produção**. Depois abra a aba **Regras**, apague o conteúdo, cole o que está em [`firestore.rules`](firestore.rules) e clique em **Publicar**.
 
 ## 2. Publicar no GitHub Pages
@@ -21,11 +21,11 @@ App de celular para controlar contas a pagar: vencimentos, contas fixas mensais,
 1. Crie um repositório público chamado `contas-a-pagar` no GitHub.
 2. Envie estes arquivos para ele:
    ```bash
-   git remote add origin https://github.com/Jonatha-Vanbro/contas-a-pagar.git
+   git remote add origin https://github.com/Jonatha-sts/contas-a-pagar.git
    git push -u origin main
    ```
 3. No repositório, abra **Settings → Pages**, em *Branch* escolha `main` e a pasta `/ (root)`, e salve.
-4. Em um ou dois minutos o app fica em `https://jonatha-vanbro.github.io/contas-a-pagar/`.
+4. Em um ou dois minutos o app fica em `https://jonatha-sts.github.io/contas-a-pagar/`.
 
 ## 3. Instalar no celular
 
